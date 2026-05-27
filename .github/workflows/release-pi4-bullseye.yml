@@ -79,6 +79,8 @@ jobs:
           void hailo_release_output_vstreams(void){}
           void hailo_release_vdevice(void){}
           void hailo_vdevice_infer(void){}
+          void hailo_vstream_write_raw_buffer(void){}
+          void hailo_vstream_read_raw_buffer(void){}
           STUBEOF
           gcc -shared -o /usr/lib/libhailort.so /tmp/hailort_stub.c
           ldconfig
