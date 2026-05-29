@@ -4,7 +4,7 @@ on:
   push:
     tags:
       - 'v*'
-      - '!v*-pi4-bullseye'
+      - '!v*-pi4-*'   # pi4 variants build via release-pi4-bullseye[-armhf].yml; keep them off the main release
   workflow_dispatch:
 
 permissions:
@@ -31,7 +31,7 @@ jobs:
           token: ${{ secrets.PROJECTOPERATIONS }}
 
       - name: Configure git auth for private deps
-        run: git config --global url."https://${{ secrets.ProjectOperations }}@github.com/".insteadOf "https://github.com/"
+        run: git config --global url."https://${{ secrets.PROJECTOPERATIONS }}@github.com/".insteadOf "https://github.com/"
 
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
@@ -68,7 +68,7 @@ jobs:
           token: ${{ secrets.PROJECTOPERATIONS }}
 
       - name: Configure git auth for private deps
-        run: git config --global url."https://${{ secrets.ProjectOperations }}@github.com/".insteadOf "https://github.com/"
+        run: git config --global url."https://${{ secrets.PROJECTOPERATIONS }}@github.com/".insteadOf "https://github.com/"
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -126,7 +126,7 @@ jobs:
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
       - name: Configure git auth for private deps
-        run: git config --global url."https://${{ secrets.ProjectOperations }}@github.com/".insteadOf "https://github.com/"
+        run: git config --global url."https://${{ secrets.PROJECTOPERATIONS }}@github.com/".insteadOf "https://github.com/"
 
       - name: Download WASM dist
         uses: actions/download-artifact@v4
@@ -234,7 +234,7 @@ jobs:
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
       - name: Configure git auth for private deps
-        run: git config --global url."https://${{ secrets.ProjectOperations }}@github.com/".insteadOf "https://github.com/"
+        run: git config --global url."https://${{ secrets.PROJECTOPERATIONS }}@github.com/".insteadOf "https://github.com/"
 
       - name: Download WASM dist
         uses: actions/download-artifact@v4
@@ -322,7 +322,7 @@ jobs:
           token: ${{ secrets.PROJECTOPERATIONS }}
 
       - name: Configure git auth for private deps
-        run: git config --global url."https://${{ secrets.ProjectOperations }}@github.com/".insteadOf "https://github.com/"
+        run: git config --global url."https://${{ secrets.PROJECTOPERATIONS }}@github.com/".insteadOf "https://github.com/"
 
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
@@ -384,7 +384,7 @@ jobs:
           token: ${{ secrets.PROJECTOPERATIONS }}
 
       - name: Configure git auth for private deps
-        run: git config --global url."https://${{ secrets.ProjectOperations }}@github.com/".insteadOf "https://github.com/"
+        run: git config --global url."https://${{ secrets.PROJECTOPERATIONS }}@github.com/".insteadOf "https://github.com/"
 
       - name: Package all embedded HEF models
         run: |
