@@ -1,0 +1,54 @@
+# ============================================================================
+# Example: Talos hardware-daemon config for the single-zone AHU
+# ============================================================================
+# One MegaBAS HAT at stack address 0. This file must live in the SAME
+# directory as site.toml — the controller reads both from there.
+#
+# Schema: server / polling / boards / i2c / logging / aegisdb.
+# Each board is `[boards.<type>]` with `enabled` + `stacks = [...]`.
+# Board types: megabas, megaind, univin16, uout16, relind16, relind8.
+# ============================================================================
+
+[server]
+host = "127.0.0.1"
+port = 6100
+
+[polling]
+interval_ms = 1000
+timeout_ms = 500
+
+[boards]
+[boards.megabas]
+enabled = true
+stacks = [0]
+
+[boards.megaind]
+enabled = false
+
+[boards.univin16]
+enabled = false
+
+[boards.relind16]
+enabled = false
+
+[boards.relind8]
+enabled = false
+
+[boards.uout16]
+enabled = false
+
+[i2c]
+bus = 1
+retry_count = 3
+retry_delay_ms = 10
+
+[logging]
+level = "info"
+file = "/var/log/nexusedge/hardware-daemon.log"
+
+# Optional on-device runtime-hours persistence (off by default).
+[aegisdb]
+enabled = false
+url = ""
+interval_ms = 5000
+node_name = "ahu-1"

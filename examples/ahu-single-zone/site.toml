@@ -1,0 +1,154 @@
+# ============================================================================
+# Example: Single-Zone Air Handling Unit (AHU)
+# ============================================================================
+# A generic, self-contained NexusEdge site config for one AHU on a single
+# Sequent Microsystems MegaBAS HAT (stack 0). Heating + cooling valves, an
+# outside-air economizer damper, and a supply fan, controlled to a seasonal
+# supply-air-temperature setpoint by the `tmc_ahu` algorithm.
+#
+# Copy this directory and adapt the channel map, setpoints, and scaling to
+# your hardware, then install with:
+#
+#   curl -fsSL https://nexusedgehailo.automatanexus.com/install.sh | sudo bash \
+#       -s -- --email you@example.com --password 'yourpass' --config ./ahu-single-zone/
+#
+# Notes
+#   * `name` is required on every input/output.
+#   * MegaBAS analog inputs are read as raw 0-10V. Add an
+#     [equipment.inputs.scaling] block to map volts → engineering units
+#     (see the supply-fan CT below). NTC channels convert to °F automatically.
+#   * Modulating outputs use the heating_valve / cooling_valve / damper signal
+#     types (0-100% → 0-10V); set `inverted = true` for reverse-acting / NC.
+#   * This example pushes metrics only to the local store — there is no
+#     [nexusbms] block (that is for managed fleets).
+# ============================================================================
+
+[site]
+name = "Example AHU Site"
+location = "Mechanical Room 1"
+talos_url = "http://127.0.0.1:6100"
+
+[site.flags]
+mode = "auto"
+
+[[equipment]]
+id = "ahu-1"
+name = "AHU-1"
+type = "ahu"
+tags = ["ahu", "air-handler"]
+
+# ── Inputs — MegaBAS stack 0 ────────────────────────────────────────────────
+[[equipment.inputs]]
+name = "supply_temp"          # used by tmc_ahu (controlled variable)
+label = "Supply Air Temp"
+board = "megabas"
+stack = 0
+channel = 1
+signal_type = "ntc10k"
+precision = 1
+[equipment.inputs.thresholds]
+low_alarm = 45.0
+high_alarm = 110.0
+
+[[equipment.inputs]]
+name = "return_temp"
+label = "Return Air Temp"
+board = "megabas"
+stack = 0
+channel = 2
+signal_type = "ntc10k"
+precision = 1
+
+[[equipment.inputs]]
+name = "outdoor_temp"         # used by tmc_ahu (seasonal blend + economizer)
+label = "Outside Air Temp"
+board = "megabas"
+stack = 0
+channel = 3
+signal_type = "ntc10k"
+precision = 1
+
+[[equipment.inputs]]
+name = "mixed_temp"
+label = "Mixed Air Temp"
+board = "megabas"
+stack = 0
+channel = 4
+signal_type = "ntc10k"
+precision = 1
+
+[[equipment.inputs]]
+name = "supply_fan_amps"      # 0-10V current transformer → 0-50 A
+label = "Supply Fan CT"
+board = "megabas"
+stack = 0
+channel = 5
+signal_type = "current_transformer"
+precision = 1
+[equipment.inputs.scaling]
+input_min = 0.0
+input_max = 10.0
+output_min = 0.0
+output_max = 50.0
+
+# ── Outputs — MegaBAS stack 0 ───────────────────────────────────────────────
+[[equipment.outputs]]
+name = "hw_valve"
+label = "Heating Valve"
+board = "megabas"
+stack = 0
+channel = 1                   # analog output (DAC) channel 1
+signal_type = "heating_valve" # 0-100% → 0-10V; inverted = true for NC/reverse
+precision = 1
+
+[[equipment.outputs]]
+name = "cw_valve"
+label = "Cooling Valve"
+board = "megabas"
+stack = 0
+channel = 2
+signal_type = "cooling_valve"
+precision = 1
+
+[[equipment.outputs]]
+name = "oa_damper"
+label = "Outside Air Damper"
+board = "megabas"
+stack = 0
+channel = 3
+signal_type = "damper"
+precision = 1
+
+[[equipment.outputs]]
+name = "fan_enable"
+label = "Supply Fan"
+board = "megabas"
+stack = 0
+channel = 1                   # triac channel 1
+signal_type = "triac"
+precision = 0
+
+# ── Algorithm: seasonal supply-air-temperature control with economizer ──────
+[equipment.algorithm_params]
+algorithm = "tmc_ahu"
+summer_setpoint = 55.0        # cool-season SAT target (°F)
+winter_setpoint = 68.0        # heat-season SAT target (°F)
+deadband = 1.0
+error_gain = 12.0
+max_step = 3.0                # max % output change per cycle (slew limit)
+min_oa_position = 15.0        # minimum outside-air damper %
+freeze_limit = 38.0           # freeze-stat SAT cutoff (°F)
+
+# ── Weather (optional) ───────────────────────────────────────────────────────
+[weather]
+zip = "00000"
+country = "US"
+units = "imperial"
+poll_interval_secs = 600
+
+# ── Local data + secret store ────────────────────────────────────────────────
+[database]
+data_dir = "/var/lib/nexusedge/aegisdb"
+
+[vault]
+path = "/var/lib/nexusedge/vault"
