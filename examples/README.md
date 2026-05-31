@@ -1,9 +1,16 @@
 # NexusEdge Configuration Examples
 
 Self-contained, ready-to-adapt site configurations for NexusEdge Hailo Edition.
-Each example is a directory containing a `site.toml` (equipment, I/O map, control
+Each example is a directory with a `site.toml` (equipment, I/O map, control
 algorithm, setpoints) and a matching `hardware-daemon.toml` (which Sequent
 Microsystems HATs are present and at which stack addresses).
+
+NexusEdge **Community Edition** includes **three control algorithms** —
+`tmc`, `pid`, and `on_off`. The examples below cover all three. (The full
+library of 40+ equipment-specific algorithms — AHU, RTU, chiller, cooling
+tower, DOAS, VAV, natatorium, lead/lag plants, and more — unlocks with a Pro
+subscription; they appear in the algorithm selector but are locked in
+Community Edition.)
 
 ## Using an example
 
@@ -12,17 +19,19 @@ your wiring, then point the installer at it:
 
 ```bash
 curl -fsSL https://nexusedgehailo.automatanexus.com/install.sh | sudo bash \
-    -s -- --email you@example.com --password 'yourpass' --config ./ahu-single-zone/
+    -s -- --email you@example.com --password 'yourpass' --config ./tmc-ahu/
 ```
 
 The installer copies both `.toml` files into `/etc/nexusedge/config/` and starts
 the controller; the app and the embedded control engine both read from there.
 
-## Examples
+## Community-tier examples
 
-| Directory | Equipment | Algorithm | Demonstrates |
+| Directory | Algorithm | Equipment | Demonstrates |
 |---|---|---|---|
-| [`ahu-single-zone/`](ahu-single-zone/) | Air handling unit | `tmc_ahu` | One MegaBAS HAT; NTC temps; a current-transformer input scaled to amps; modulating heating/cooling valves + economizer damper; seasonal SAT setpoints. |
+| [`ahu-single-zone/`](ahu-single-zone/) | `tmc` | Single-zone AHU | Temperature-modulation control of heating/cooling valves + economizer damper; a current-transformer input scaled to amps; freeze/high-limit safeties. |
+| [`pid-loop/`](pid-loop/) | `pid` | Hot-water reheat loop | Classic PID modulating one valve to a zone-temperature setpoint; reverse-acting (heating) sense. |
+| [`on-off-boiler/`](on-off-boiler/) | `on_off` | Hot-water boiler | Hysteresis/bang-bang burner + circulator control with minimum on/off timers (anti-short-cycle). |
 
 ## Config notes
 
@@ -46,5 +55,5 @@ the controller; the app and the embedded control engine both read from there.
 - **Board types**: `megabas`, `megaind`, `univin16`, `uout16`, `relind16`,
   `relind8`. Each `[boards.<type>]` takes `enabled` and `stacks = [..]`.
 
-See [`docs/ALGORITHM_PARAMS.md`](../docs/ALGORITHM_PARAMS.md) for the full list of
-control algorithms and their tunable parameters.
+See [`docs/ALGORITHM_PARAMS.md`](../docs/ALGORITHM_PARAMS.md) for every algorithm
+and its tunable parameters.

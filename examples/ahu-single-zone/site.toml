@@ -1,26 +1,25 @@
 # ============================================================================
-# Example: Single-Zone Air Handling Unit (AHU)
+# Example: Single-Zone AHU — TMC (Temperature Modulation Control)
 # ============================================================================
-# A generic, self-contained NexusEdge site config for one AHU on a single
-# Sequent Microsystems MegaBAS HAT (stack 0). Heating + cooling valves, an
-# outside-air economizer damper, and a supply fan, controlled to a seasonal
-# supply-air-temperature setpoint by the `tmc_ahu` algorithm.
+# `tmc` is one of the three control algorithms included in NexusEdge Community
+# Edition (alongside `pid` and `on_off`). It modulates heating/cooling valves
+# and an economizer damper to drive the supply-air temperature to a setpoint,
+# with velocity/momentum braking to avoid overshoot, plus freeze + high-limit
+# safeties. One Sequent Microsystems MegaBAS HAT (stack 0).
 #
-# Copy this directory and adapt the channel map, setpoints, and scaling to
-# your hardware, then install with:
-#
+# Install:
 #   curl -fsSL https://nexusedgehailo.automatanexus.com/install.sh | sudo bash \
 #       -s -- --email you@example.com --password 'yourpass' --config ./ahu-single-zone/
 #
 # Notes
 #   * `name` is required on every input/output.
-#   * MegaBAS analog inputs are read as raw 0-10V. Add an
-#     [equipment.inputs.scaling] block to map volts → engineering units
-#     (see the supply-fan CT below). NTC channels convert to °F automatically.
-#   * Modulating outputs use the heating_valve / cooling_valve / damper signal
-#     types (0-100% → 0-10V); set `inverted = true` for reverse-acting / NC.
-#   * This example pushes metrics only to the local store — there is no
-#     [nexusbms] block (that is for managed fleets).
+#   * MegaBAS analog inputs are raw 0-10V; add [equipment.inputs.scaling] to
+#     map volts → engineering units (see the supply-fan CT). NTC channels
+#     convert to °F automatically.
+#   * Modulating outputs use heating_valve / cooling_valve / damper (0-100% →
+#     0-10V); set `inverted = true` for reverse-acting / NC actuators.
+#   * No [nexusbms] block — metrics stay on the local store (that section is
+#     for managed fleets).
 # ============================================================================
 
 [site]
@@ -39,7 +38,7 @@ tags = ["ahu", "air-handler"]
 
 # ── Inputs — MegaBAS stack 0 ────────────────────────────────────────────────
 [[equipment.inputs]]
-name = "supply_temp"          # used by tmc_ahu (controlled variable)
+name = "supply_temp"          # tmc process variable (controlled to setpoint)
 label = "Supply Air Temp"
 board = "megabas"
 stack = 0
@@ -60,7 +59,7 @@ signal_type = "ntc10k"
 precision = 1
 
 [[equipment.inputs]]
-name = "outdoor_temp"         # used by tmc_ahu (seasonal blend + economizer)
+name = "outdoor_temp"         # tmc uses OAT to gate the economizer
 label = "Outside Air Temp"
 board = "megabas"
 stack = 0
@@ -128,16 +127,18 @@ channel = 1                   # triac channel 1
 signal_type = "triac"
 precision = 0
 
-# ── Algorithm: seasonal supply-air-temperature control with economizer ──────
+# ── Algorithm: TMC temperature modulation with economizer ───────────────────
 [equipment.algorithm_params]
-algorithm = "tmc_ahu"
-summer_setpoint = 55.0        # cool-season SAT target (°F)
-winter_setpoint = 68.0        # heat-season SAT target (°F)
+algorithm = "tmc"
+setpoint = 55.0               # supply-air-temperature target (°F)
 deadband = 1.0
-error_gain = 12.0
+error_gain = 10.0
+thermal_mass = 20.0           # higher = more momentum braking (slower, smoother)
 max_step = 3.0                # max % output change per cycle (slew limit)
 min_oa_position = 15.0        # minimum outside-air damper %
-freeze_limit = 38.0           # freeze-stat SAT cutoff (°F)
+max_hw_position = 100.0
+max_cw_position = 100.0
+freeze_limit = 38.0           # freeze-stat supply-temp cutoff (°F)
 
 # ── Weather (optional) ───────────────────────────────────────────────────────
 [weather]

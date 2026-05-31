@@ -1,0 +1,86 @@
+# ============================================================================
+# Example: Hot-Water Reheat Loop — PID
+# ============================================================================
+# `pid` is one of the three NexusEdge Community Edition control algorithms. A
+# classic proportional-integral-derivative loop: it modulates a single output
+# (here a hot-water valve) to hold a process variable (zone temperature) at a
+# setpoint. One MegaBAS HAT (stack 0).
+#
+# Install:
+#   curl -fsSL https://nexusedgehailo.automatanexus.com/install.sh | sudo bash \
+#       -s -- --email you@example.com --password 'yourpass' --config ./pid-loop/
+# ============================================================================
+
+[site]
+name = "Example PID Site"
+location = "Zone 3"
+talos_url = "http://127.0.0.1:6100"
+
+[site.flags]
+mode = "auto"
+
+[[equipment]]
+id = "reheat-loop-1"
+name = "Zone 3 Reheat"
+type = "ahu"
+tags = ["reheat", "pid"]
+
+# ── Inputs — MegaBAS stack 0 ────────────────────────────────────────────────
+[[equipment.inputs]]
+name = "space_temp"           # pid process variable (controlled to setpoint)
+label = "Zone Temp"
+board = "megabas"
+stack = 0
+channel = 1
+signal_type = "ntc10k"
+precision = 1
+[equipment.inputs.thresholds]
+low_alarm = 55.0
+high_alarm = 85.0
+
+[[equipment.inputs]]
+name = "return_temp"
+label = "Loop Return Temp"
+board = "megabas"
+stack = 0
+channel = 2
+signal_type = "ntc10k"
+precision = 1
+
+# ── Outputs — MegaBAS stack 0 ───────────────────────────────────────────────
+[[equipment.outputs]]
+name = "hw_valve"
+label = "Reheat Valve"
+board = "megabas"
+stack = 0
+channel = 1                   # analog output (DAC) channel 1
+signal_type = "heating_valve" # 0-100% → 0-10V
+precision = 1
+
+[[equipment.outputs]]
+name = "fan_enable"
+label = "Terminal Fan"
+board = "megabas"
+stack = 0
+channel = 1                   # triac channel 1
+signal_type = "triac"
+precision = 0
+
+# ── Algorithm: PID ──────────────────────────────────────────────────────────
+[equipment.algorithm_params]
+algorithm = "pid"
+setpoint = 70.0               # zone-temperature target (°F)
+kp = 5.0                      # proportional gain
+ki = 0.1                      # integral gain (per second)
+kd = 0.0                      # derivative gain
+min_output = 0.0
+max_output = 100.0
+max_step = 5.0                # max % output change per cycle (slew limit)
+reverse_acting = 1            # 1 = output rises as PV falls (heating); 0 = cooling
+
+# ── Local data + secret store ────────────────────────────────────────────────
+[database]
+data_dir = "/var/lib/nexusedge/aegisdb"
+
+[vault]
+path = "/var/lib/nexusedge/vault"

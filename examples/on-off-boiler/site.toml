@@ -1,0 +1,85 @@
+# ============================================================================
+# Example: Hot-Water Boiler — On/Off (Bang-Bang)
+# ============================================================================
+# `on_off` is one of the three NexusEdge Community Edition control algorithms.
+# Hysteresis (deadband) control with minimum on/off timers to prevent
+# short-cycling: it fires the burner (`heat`) and circulator (`circ_pump`) when
+# the boiler outlet temperature drops below setpoint, and stops them once it
+# rises back above. One MegaBAS HAT (stack 0); the two outputs are triacs
+# driving the burner-enable and pump contactors.
+#
+# Install:
+#   curl -fsSL https://nexusedgehailo.automatanexus.com/install.sh | sudo bash \
+#       -s -- --email you@example.com --password 'yourpass' --config ./on-off-boiler/
+# ============================================================================
+
+[site]
+name = "Example Boiler Site"
+location = "Boiler Room"
+talos_url = "http://127.0.0.1:6100"
+
+[site.flags]
+mode = "auto"
+
+[[equipment]]
+id = "boiler-1"
+name = "Boiler-1"
+type = "boiler"
+tags = ["boiler", "hot-water"]
+
+# ── Inputs — MegaBAS stack 0 ────────────────────────────────────────────────
+[[equipment.inputs]]
+name = "supply_temp"          # on_off process variable (boiler outlet temp)
+label = "Boiler Supply Temp"
+board = "megabas"
+stack = 0
+channel = 1
+signal_type = "ntc10k"
+precision = 1
+[equipment.inputs.thresholds]
+high_warning = 180.0
+high_alarm = 200.0
+
+[[equipment.inputs]]
+name = "return_temp"
+label = "Boiler Return Temp"
+board = "megabas"
+stack = 0
+channel = 2
+signal_type = "ntc10k"
+precision = 1
+
+# ── Outputs — MegaBAS stack 0 (triacs) ──────────────────────────────────────
+[[equipment.outputs]]
+name = "heat"
+label = "Burner Enable"
+board = "megabas"
+stack = 0
+channel = 1
+signal_type = "triac"
+precision = 0
+
+[[equipment.outputs]]
+name = "circ_pump"
+label = "Circulator Pump"
+board = "megabas"
+stack = 0
+channel = 2
+signal_type = "triac"
+precision = 0
+
+# ── Algorithm: On/Off with anti-short-cycle timers ──────────────────────────
+[equipment.algorithm_params]
+algorithm = "on_off"
+setpoint = 140.0              # boiler supply target (°F)
+deadband = 5.0               # ± band around setpoint before switching
+min_on_delay = 60.0          # min seconds ON before it may turn off
+min_off_delay = 120.0        # min seconds OFF before it may turn on
+reverse_acting = 0           # 0 = heating (ON when PV below setpoint); 1 = cooling
+
+# ── Local data + secret store ────────────────────────────────────────────────
+[database]
+data_dir = "/var/lib/nexusedge/aegisdb"
+
+[vault]
+path = "/var/lib/nexusedge/vault"
