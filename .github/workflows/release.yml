@@ -144,11 +144,6 @@ jobs:
           void hailo_create_input_vstreams(void){}
           void hailo_create_output_vstreams(void){}
           void hailo_create_vdevice(void){}
-          void hailo_get_physical_devices(void){}
-          void hailo_get_chip_temperature(void){}
-          void hailo_power_measurement(void){}
-          void hailo_get_throttling_state(void){}
-          void hailo_get_library_version(void){}
           void hailo_get_device_architecture(void){}
           void hailo_get_fw_version(void){}
           void hailo_get_input_vstream_frame_size(void){}
@@ -257,11 +252,6 @@ jobs:
           void hailo_create_input_vstreams(void){}
           void hailo_create_output_vstreams(void){}
           void hailo_create_vdevice(void){}
-          void hailo_get_physical_devices(void){}
-          void hailo_get_chip_temperature(void){}
-          void hailo_power_measurement(void){}
-          void hailo_get_throttling_state(void){}
-          void hailo_get_library_version(void){}
           void hailo_get_device_architecture(void){}
           void hailo_get_fw_version(void){}
           void hailo_get_input_vstream_frame_size(void){}
