@@ -165,6 +165,11 @@ jobs:
           void hailo_set_output_vstreams(void){}
           void hailo_vstream_read_raw_buffer(void){}
           void hailo_vstream_write_raw_buffer(void){}
+          void hailo_get_chip_temperature(void){}
+          void hailo_get_library_version(void){}
+          void hailo_get_physical_devices(void){}
+          void hailo_get_throttling_state(void){}
+          void hailo_power_measurement(void){}
           STUBEOF
           gcc -shared -o /usr/lib/libhailort.so /tmp/hailort_stub.c
 
@@ -273,6 +278,11 @@ jobs:
           void hailo_set_output_vstreams(void){}
           void hailo_vstream_read_raw_buffer(void){}
           void hailo_vstream_write_raw_buffer(void){}
+          void hailo_get_chip_temperature(void){}
+          void hailo_get_library_version(void){}
+          void hailo_get_physical_devices(void){}
+          void hailo_get_throttling_state(void){}
+          void hailo_power_measurement(void){}
           STUBEOF
           gcc -shared -o /usr/lib/libhailort.so /tmp/hailort_stub.c
 
