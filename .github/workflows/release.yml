@@ -206,6 +206,120 @@ jobs:
             release/nexusedge-hailoedition-pi5-bookworm-aarch64.tar.gz
             release/nexusedge-hailoedition-pi5-bookworm-aarch64.tar.gz.sha256
 
+  build-cm5:
+    name: Build cm5-bookworm-aarch64
+    # Compute Module 5 (eMMC/Lite) — same BCM2712 silicon, Bookworm + aarch64 as
+    # the Pi 5, so this mirrors build-pi5 exactly; it ships as its own labeled,
+    # independently-attested asset so the CM5 eMMC board SKU is first-class.
+    needs: [test, wasm]
+    runs-on: ubuntu-24.04-arm
+    container: debian:bookworm
+    outputs:
+      digest: ${{ steps.hash.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ env.PRIVATE_REPO }}
+          token: ${{ secrets.PROJECTOPERATIONS }}
+
+      - name: Install build dependencies
+        run: |
+          rm -f /etc/apt/apt.conf.d/docker-clean
+          apt-get update -qq
+          apt-get install -y -qq curl build-essential pkg-config git
+          apt-get install -y -qq libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev libjavascriptcoregtk-4.1-dev libappindicator3-dev librsvg2-dev libssl-dev
+          apt-get install -y -qq libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libgstreamer-plugins-bad1.0-dev libgstreamer-gl1.0-0
+          apt-get install -y -qq libxcb-render0-dev libxcb-shm0-dev libepoxy-dev libx11-dev libxcursor-dev libxkbcommon-dev libxi-dev libxrandr-dev
+          apt-get install -y -qq libsecret-1-dev libgcrypt20-dev libnghttp2-dev libbrotli-dev libwebp-dev libicu-dev
+          apt-get install -y -qq libxslt1-dev libxml2-dev libffi-dev libpng-dev libjpeg-dev libfontconfig-dev libpixman-1-dev libgraphite2-dev
+          apt-get install -y -qq libstdc++-12-dev
+
+      - name: Install Rust
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Configure git auth for private deps
+        run: git config --global url."https://${{ secrets.PROJECTOPERATIONS }}@github.com/".insteadOf "https://github.com/"
+
+      - name: Download WASM dist
+        uses: actions/download-artifact@v4
+        with:
+          name: wasm-dist
+          path: dist
+
+      - name: Create HailoRT stub library
+        run: |
+          cat > /tmp/hailort_stub.c << 'STUBEOF'
+          void HailoRTStatusStringsGet(void){}
+          void hailo_configure_device(void){}
+          void hailo_configure_vdevice(void){}
+          void hailo_create_hef_buffer(void){}
+          void hailo_create_input_vstreams(void){}
+          void hailo_create_output_vstreams(void){}
+          void hailo_create_vdevice(void){}
+          void hailo_get_device_architecture(void){}
+          void hailo_get_fw_version(void){}
+          void hailo_get_input_vstream_frame_size(void){}
+          void hailo_get_output_vstream_frame_size(void){}
+          void hailo_hef_free(void){}
+          void hailo_init_hef(void){}
+          void hailo_infer(void){}
+          void hailo_make_input_vstream_params(void){}
+          void hailo_make_output_vstream_params(void){}
+          void hailo_release_device(void){}
+          void hailo_release_hef(void){}
+          void hailo_release_input_vstream(void){}
+          void hailo_release_input_vstreams(void){}
+          void hailo_release_output_vstream(void){}
+          void hailo_release_output_vstreams(void){}
+          void hailo_release_vdevice(void){}
+          void hailo_scan_devices(void){}
+          void hailo_set_input_vstreams(void){}
+          void hailo_set_output_vstreams(void){}
+          void hailo_vstream_read_raw_buffer(void){}
+          void hailo_vstream_write_raw_buffer(void){}
+          void hailo_get_chip_temperature(void){}
+          void hailo_get_library_version(void){}
+          void hailo_get_physical_devices(void){}
+          void hailo_get_throttling_state(void){}
+          void hailo_power_measurement(void){}
+          STUBEOF
+          gcc -shared -o /usr/lib/libhailort.so /tmp/hailort_stub.c
+
+      - name: Build release binary
+        run: |
+          . "$HOME/.cargo/env"
+          RUSTFLAGS="-C link-args=-Wl,--allow-shlib-undefined" cargo build --release -p nexusedge-tauri
+
+      - name: Package binary
+        run: |
+          mkdir -p release
+          cp target/release/nexusedge-tauri release/nexusedge-hailoedition
+          cd release
+          tar czf nexusedge-hailoedition-cm5-bookworm-aarch64.tar.gz nexusedge-hailoedition
+          sha256sum nexusedge-hailoedition-cm5-bookworm-aarch64.tar.gz > nexusedge-hailoedition-cm5-bookworm-aarch64.tar.gz.sha256
+
+      - name: Compute digest for SLSA
+        id: hash
+        run: |
+          cd release
+          DIGEST=$(sha256sum nexusedge-hailoedition-cm5-bookworm-aarch64.tar.gz | base64 -w0)
+          echo "digest=$DIGEST" >> $GITHUB_OUTPUT
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: release/nexusedge-hailoedition-cm5-bookworm-aarch64.tar.gz
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexusedge-hailoedition-cm5-bookworm-aarch64
+          path: |
+            release/nexusedge-hailoedition-cm5-bookworm-aarch64.tar.gz
+            release/nexusedge-hailoedition-cm5-bookworm-aarch64.tar.gz.sha256
+
 
 
   build-pi4:
@@ -569,7 +683,7 @@ jobs:
 
   release:
     name: Create GitHub Release
-    needs: [build-pi5, build-pi4, build-x86, package-models, docker, helm]
+    needs: [build-pi5, build-cm5, build-pi4, build-x86, package-models, docker, helm]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -582,6 +696,12 @@ jobs:
         with:
           name: nexusedge-hailoedition-pi5-bookworm-aarch64
           path: artifacts/pi5
+
+      - name: Download CM5 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: nexusedge-hailoedition-cm5-bookworm-aarch64
+          path: artifacts/cm5
 
       - name: Download Pi4 artifact
         uses: actions/download-artifact@v4
