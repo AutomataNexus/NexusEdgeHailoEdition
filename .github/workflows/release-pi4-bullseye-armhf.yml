@@ -56,8 +56,17 @@ jobs:
           linker = "arm-linux-gnueabihf-gcc"
           CFGEOF
 
-      - name: Create empty dist for include_dir
-        run: mkdir -p dist && echo '<html><body>Headless mode</body></html>' > dist/index.html
+      - name: Provide UI dist for include_dir (embed real committed WASM UI)
+        run: |
+          # The fork commits a built Trunk UI in dist/ (index.html + *_bg.wasm).
+          # Embed it so the headless controller serves the real web UI on :8000.
+          # Only fall back to a placeholder if no built UI is present.
+          if ls dist/*_bg.wasm >/dev/null 2>&1 && [ -f dist/index.html ]; then
+            echo "Embedding committed UI dist:"; ls -la dist/
+          else
+            echo "WARNING: no built UI in dist/ — embedding headless placeholder"
+            mkdir -p dist && echo '<html><body>Headless mode</body></html>' > dist/index.html
+          fi
 
       - name: Create HailoRT stub library
         run: |
@@ -125,11 +134,11 @@ jobs:
             release/nexusedge-hailoedition-pi4-bullseye-headless-armhf.tar.gz
             release/nexusedge-hailoedition-pi4-bullseye-headless-armhf.tar.gz.sha256
           tag_name: ${{ github.ref_name }}
-          name: "NexusEdge Pi4 Bullseye Headless armhf — ${{ github.ref_name }}"
+          name: "NexusEdge Pi4 Bullseye armhf (Web UI) — ${{ github.ref_name }}"
           body: |
-            Pi 4 Bullseye headless binary (32-bit armhf, no Hailo NPU, no GUI).
-            For field controllers running 32-bit Raspbian Bullseye.
-            SLSA Build L3 attested.
+            Pi 4 Bullseye binary (32-bit armhf, no Hailo NPU). No desktop window;
+            serves the full web UI on :8000 for field controllers running 32-bit
+            Raspbian Bullseye. SLSA Build L3 attested.
           draft: false
           prerelease: false
         env:
