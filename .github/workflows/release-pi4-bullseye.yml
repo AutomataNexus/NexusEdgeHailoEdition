@@ -26,11 +26,20 @@ jobs:
     steps:
       - name: Install build dependencies
         run: |
-          # Debian 11 LTS ended 2026-08-31: the bullseye-security index still
-          # advertises packages the pool no longer carries (and its Release
-          # expires 2026-09-07), so every fetch 404s. The main bullseye pool is
-          # intact and has everything this job needs — drop the security source.
-          sed -i '/bullseye-security/d' /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null || true
+          # Debian 11 LTS ended 2026-08-31: deb.debian.org's bullseye-security
+          # index still advertises packages its pool no longer carries (a
+          # different one 404s each run) and the Release expires 2026-09-07.
+          # The image's own libs are at those security versions, so the main
+          # pool alone can't satisfy the -dev deps either. Pin every source to
+          # the last consistent snapshot instead.
+          SNAP=20260901T000000Z
+          cat > /etc/apt/sources.list <<SRC
+          deb [check-valid-until=no] http://snapshot.debian.org/archive/debian/$SNAP bullseye main
+          deb [check-valid-until=no] http://snapshot.debian.org/archive/debian/$SNAP bullseye-updates main
+          deb [check-valid-until=no] http://snapshot.debian.org/archive/debian-security/$SNAP bullseye-security main
+          SRC
+          rm -f /etc/apt/sources.list.d/* 2>/dev/null || true
+          echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-retries
           apt-get update -qq
           apt-get install -y -qq curl build-essential pkg-config git ca-certificates
           apt-get install -y -qq libssl-dev
