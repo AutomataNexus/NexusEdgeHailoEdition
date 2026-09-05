@@ -27,20 +27,11 @@ jobs:
       - name: Install build dependencies
         run: |
           dpkg --add-architecture armhf
-          # Bullseye is oldstable and its pool moves out from under the image's
-          # baked-in package index, which 404s on a versioned .deb that no
-          # longer exists (seen 2026-09-04: gnupg2 2.2.27-2+deb11u3). Dropping
-          # the cached lists forces a fresh index that matches the live pool.
-          # Retries cover a mirror mid-sync. -qq is deliberately NOT used, so a
-          # future breakage is diagnosable from the log instead of silent.
-          rm -rf /var/lib/apt/lists/*
-          apt-get -o Acquire::Retries=3 update
-          apt-get install -y --no-install-recommends -o Acquire::Retries=3 \
-            curl build-essential pkg-config git ca-certificates
-          apt-get install -y --no-install-recommends -o Acquire::Retries=3 libssl-dev
-          apt-get install -y --no-install-recommends -o Acquire::Retries=3 \
-            gcc-arm-linux-gnueabihf libc6-dev-armhf-cross
-          apt-get install -y --no-install-recommends -o Acquire::Retries=3 libssl-dev:armhf || true
+          apt-get update -qq
+          apt-get install -y -qq curl build-essential pkg-config git ca-certificates
+          apt-get install -y -qq libssl-dev
+          apt-get install -y -qq gcc-arm-linux-gnueabihf libc6-dev-armhf-cross
+          apt-get install -y -qq libssl-dev:armhf || true
 
       - name: Install Rust
         run: |
