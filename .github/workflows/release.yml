@@ -46,12 +46,18 @@ jobs:
         env:
           OWM_API_KEY: ${{ secrets.OWM_API_KEY }}
           FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          NXE_CTRL_KEY: ${{ secrets.NXE_CTRL_KEY }}
+          NXE_DEVOPS_PASSWORD: ${{ secrets.NXE_DEVOPS_PASSWORD }}
+          NXE_SMTP_PASS: ${{ secrets.NXE_SMTP_PASS }}
 
       - name: Run clippy
         run: cargo clippy --workspace -- -D warnings
         env:
           OWM_API_KEY: ${{ secrets.OWM_API_KEY }}
           FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          NXE_CTRL_KEY: ${{ secrets.NXE_CTRL_KEY }}
+          NXE_DEVOPS_PASSWORD: ${{ secrets.NXE_DEVOPS_PASSWORD }}
+          NXE_SMTP_PASS: ${{ secrets.NXE_SMTP_PASS }}
       - uses: dtolnay/rust-toolchain@nightly
         with:
           components: rustfmt
